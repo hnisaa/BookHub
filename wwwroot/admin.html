@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yönetim Paneli – BookHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/orders.css">
+  <style>
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 24px; overflow-x: auto; }
+    .tabs button { border: 0; background: none; padding: 12px 16px; font: 600 .92rem var(--sans); color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tabs button.on { color: var(--ink); border-color: var(--accent); }
+    .kpis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .kpi { padding: 18px; }
+    .kpi span { font-size: .8rem; color: var(--muted); }
+    .kpi strong { display: block; font: 700 1.7rem var(--serif); margin-top: 4px; }
+    .editor { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+    @media (max-width: 960px) { .editor { grid-template-columns: 1fr; } .preview { order: -1; } }
+    .editor form { padding: 22px; display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+    .editor form .full { grid-column: 1 / -1; }
+    @media (max-width: 560px) { .editor form { grid-template-columns: 1fr; } }
+    .colors { display: flex; gap: 14px; }
+    .colors input[type=color] { width: 54px; height: 40px; border: 1.5px solid var(--line); border-radius: 10px; padding: 3px; background: var(--card); cursor: pointer; }
+    .preview { position: sticky; top: 86px; border-radius: 16px; overflow: hidden; background: radial-gradient(400px 300px at 50% 40%, #3a2a1d, var(--night)); }
+    .preview .book3d-stage { height: 400px; }
+    .preview p { margin: 0; padding: 10px; text-align: center; color: #9b8e7d; font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .toolbar .input { max-width: 300px; }
+    .table .t-title { font-weight: 600; }
+    .table .t-sub { font-size: .8rem; color: var(--muted); }
+    .table .low { color: var(--danger); font-weight: 700; }
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .upload-row { display: flex; gap: 8px; }
+    .cat-form { display: flex; gap: 8px; max-width: 420px; margin-bottom: 18px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { padding: 8px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: .9rem; }
+    .chip span { color: var(--muted); margin-left: 6px; font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div style="padding:40px 0 18px"><div class="eyebrow">Yönetici</div><h1>Yönetim Paneli</h1></div>
+
+    <div class="tabs" id="tabs">
+      <button data-tab="ozet" class="on">Genel Bakış</button>
+      <button data-tab="kitaplar">Kitaplar</button>
+      <button data-tab="ekle" id="tab-ekle">Kitap Ekle</button>
+      <button data-tab="siparisler">Siparişler</button>
+      <button data-tab="kategoriler">Kategoriler</button>
+    </div>
+
+    <!-- Genel bakış -->
+    <section data-pane="ozet">
+      <div class="kpis" id="kpis"></div>
+    </section>
+
+    <!-- Kitap listesi -->
+    <section data-pane="kitaplar" class="hidden">
+      <div class="toolbar">
+        <input class="input" id="filter" type="search" placeholder="Listede ara…">
+        <button class="btn btn-accent btn-sm" id="new-book">+ Yeni Kitap</button>
+      </div>
+      <div class="panel table-wrap">
+        <table class="table">
+          <thead><tr><th></th><th>Kitap</th><th>Durum</th><th>Kategori</th><th>Fiyat</th><th>Stok</th><th>3B</th><th></th></tr></thead>
+          <tbody id="book-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Kitap ekle / düzenle -->
+    <section data-pane="ekle" class="hidden">
+      <div class="editor">
+        <form class="panel" id="book-form" novalidate>
+          <h3 class="full" id="form-title" style="margin:0">Yeni Kitap</h3>
+          <div class="field full"><label for="f-title">Kitap adı *</label><input class="input" id="f-title" name="title" required></div>
+          <div class="field"><label for="f-author">Yazar *</label><input class="input" id="f-author" name="author" required></div>
+          <div class="field"><label for="f-publisher">Yayınevi</label><input class="input" id="f-publisher" name="publisher"></div>
+          <div class="field"><label for="f-condition">Durum *</label>
+            <select class="input" id="f-condition" name="condition"><option value="sifir">Sıfır</option><option value="ikinci_el">İkinci El</option></select></div>
+          <div class="field"><label for="f-category">Kategori</label><select class="input" id="f-category" name="categoryId"><option value="">— Seçiniz —</option></select></div>
+          <div class="field full hidden" id="note-field"><label for="f-note">2. el durum notu</label><input class="input" id="f-note" name="conditionNote" placeholder="Örn. Çok iyi – sayfalarda hafif sararma"></div>
+          <div class="field"><label for="f-price">Fiyat (₺) *</label><input class="input" id="f-price" name="price" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label for="f-stock">Stok</label><input class="input" id="f-stock" name="stock" type="number" min="0" value="1"></div>
+          <div class="field"><label for="f-pages">Sayfa sayısı</label><input class="input" id="f-pages" name="pages" type="number" min="1"></div>
+          <div class="field"><label for="f-year">Basım yılı</label><input class="input" id="f-year" name="year" type="number"></div>
+          <div class="field full"><label for="f-isbn">ISBN</label><input class="input" id="f-isbn" name="isbn"></div>
+          <div class="field full"><label for="f-desc">Açıklama</label><textarea class="input" id="f-desc" name="description"></textarea></div>
+          <div class="field"><label>Kapak renkleri</label>
+            <div class="colors"><input type="color" name="coverColor" value="#7a2e3a" title="Kapak rengi"><input type="color" name="textColor" value="#f5e9d3" title="Yazı rengi"></div></div>
+          <div class="field"><label for="f-file">Kapak görseli (isteğe bağlı)</label>
+            <div class="upload-row"><input class="input" id="f-file" type="file" accept=".jpg,.jpeg,.png,.webp"><button type="button" class="btn btn-ghost btn-sm hidden" id="clear-img">Kaldır</button></div>
+            <input type="hidden" name="coverImage"></div>
+          <div class="full" style="display:flex;gap:22px;flex-wrap:wrap">
+            <label class="check"><input type="checkbox" name="has3D" checked> 3B görüntüleyici açık</label>
+            <label class="check"><input type="checkbox" name="featured"> Anasayfa 3B rafında göster</label>
+          </div>
+          <div class="full actions">
+            <button type="button" class="btn btn-ghost" id="cancel">Vazgeç</button>
+            <button type="submit" class="btn btn-accent" id="save">Kaydet</button>
+          </div>
+        </form>
+        <div class="preview"><div class="book3d-stage" id="preview-stage"></div><p>Canlı önizleme · sürükleyin</p></div>
+      </div>
+    </section>
+
+    <!-- Siparişler -->
+    <section data-pane="siparisler" class="hidden"><div id="orders"></div></section>
+
+    <!-- Kategoriler -->
+    <section data-pane="kategoriler" class="hidden">
+      <form class="cat-form" id="cat-form"><input class="input" id="cat-name" placeholder="Yeni kategori adı" required><button class="btn btn-accent">Ekle</button></form>
+      <div class="chips" id="cats"></div>
+    </section>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

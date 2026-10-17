@@ -1,0 +1,6 @@
+server/bin/
+server/obj/
+database/*.db
+database/*.db-shm
+database/*.db-wal
+wwwroot/uploads/

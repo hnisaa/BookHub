@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kitap – BookHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; padding: 40px 0; align-items: start; }
+    @media (max-width: 860px) { .detail { grid-template-columns: 1fr; gap: 24px; } }
+    .viewer {
+      position: relative; border-radius: 20px; min-height: 480px;
+      background: radial-gradient(500px 340px at 50% 40%, #3a2a1d, var(--night));
+      display: grid; place-items: center; overflow: hidden;
+    }
+    .viewer .book3d-stage { width: 100%; height: 480px; }
+    .viewer .hint { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: #9b8e7d; font-size: .75rem; letter-spacing: .16em; text-transform: uppercase; pointer-events: none; }
+    .viewer .views { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; }
+    .viewer .views button { border: 1px solid rgba(243,230,207,.25); background: rgba(0,0,0,.25); color: #f3e6cf; border-radius: 999px; padding: 6px 12px; font: 600 .78rem var(--sans); cursor: pointer; }
+    .viewer .views button:hover { border-color: var(--gold); color: var(--gold); }
+    .flat { width: min(280px, 70%); aspect-ratio: 2/3; border-radius: 4px 10px 10px 4px; overflow: hidden; box-shadow: 16px 22px 40px rgba(0,0,0,.45); }
+    .breadcrumb { font-size: .85rem; color: var(--muted); margin-bottom: 14px; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .info .author { font-size: 1.1rem; color: var(--ink-2); margin-bottom: 14px; }
+    .info .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+    .buy { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 20px; margin: 22px 0; }
+    .buy .price { font-size: 1.8rem; font-family: var(--serif); }
+    .qty { display: inline-flex; align-items: center; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; }
+    .qty button { width: 38px; height: 40px; border: 0; background: none; font-size: 1.1rem; cursor: pointer; }
+    .qty input { width: 44px; text-align: center; border: 0; font: 600 1rem var(--sans); background: none; }
+    .stock { font-size: .88rem; }
+    .stock.low { color: var(--danger); font-weight: 600; }
+    .note { padding: 12px 14px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); font-size: .9rem; margin-bottom: 18px; }
+    dl.specs { display: grid; grid-template-columns: max-content 1fr; gap: 8px 22px; margin: 0; font-size: .92rem; }
+    dl.specs dt { color: var(--muted); }
+    dl.specs dd { margin: 0; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div id="root"><div class="empty">Yükleniyor…</div></div>
+    <section class="section hidden" id="similar-sec">
+      <div class="section-head"><div><div class="eyebrow">Aynı raftan</div><h2>Benzer Kitaplar</h2></div></div>
+      <div class="grid-books" id="similar"></div>
+    </section>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (async function () {
+      const { api, $, esc, qs, formatPrice, conditionLabel, coverHTML, createBook3D, makeRotatable, addToCart, bookCardHTML, toast } = BH;
+      let book;
+      try { book = await api("/books/" + Number(qs("id"))); }
+      catch (e) { $("#root").innerHTML = `<div class="empty"><h3>Kitap bulunamadı</h3><p><a class="btn" href="/kitaplar.html">Kataloğa dön</a></p></div>`; return; }
+
+      document.title = book.title + " – BookHub";
+      const specs = [
+        ["Kategori", book.categoryName], ["Yayınevi", book.publisher], ["Basım yılı", book.year],
+        ["Sayfa", book.pages], ["ISBN", book.isbn], ["Durum", conditionLabel(book.condition)],
+      ].filter(([, v]) => v !== null && v !== undefined && v !== "");
+
+      $("#root").innerHTML = `
+        <div class="detail">
+          <div class="viewer" id="viewer">
+            ${book.has3D
+              ? `<div class="book3d-stage" id="stage"></div>
+                 <div class="views"><button data-v="on">Ön</button><button data-v="sirt">Sırt</button><button data-v="arka">Arka</button></div>
+                 <div class="hint">Sürükleyerek 360° çevirin</div>`
+              : `<div class="flat">${coverHTML(book)}</div>`}
+          </div>
+          <div class="info">
+            <div class="breadcrumb"><a href="/kitaplar.html">Kitaplar</a> / <a href="/kitaplar.html?durum=${book.condition}">${conditionLabel(book.condition)}</a></div>
+            <h1>${esc(book.title)}</h1>
+            <div class="author">${esc(book.author)}</div>
+            <div class="tags">
+              <span class="tag ${book.condition === "ikinci_el" ? "tag-used" : "tag-new"}">${conditionLabel(book.condition)}</span>
+              ${book.has3D ? '<span class="tag tag-3d">3B görüntü</span>' : ""}
+            </div>
+            ${book.condition === "ikinci_el" && book.conditionNote ? `<div class="note"><strong>Kitabın durumu:</strong> ${esc(book.conditionNote)}</div>` : ""}
+            <p>${esc(book.description || "")}</p>
+            <div class="buy panel">
+              <span class="price">${formatPrice(book.price)}</span>
+              ${book.stock > 0 ? `
+                <div class="qty"><button type="button" id="minus" aria-label="Azalt">−</button><input id="qty" value="1" inputmode="numeric" aria-label="Adet"><button type="button" id="plus" aria-label="Artır">+</button></div>
+                <button class="btn btn-accent" id="add">Sepete Ekle</button>
+                <span class="stock ${book.stock <= 2 ? "low" : "muted"}">${book.stock <= 2 ? "Son " + book.stock + " adet!" : "Stokta " + book.stock + " adet"}</span>`
+              : `<span class="stock low">Bu kitap şu an stokta yok.</span>`}
+            </div>
+            <dl class="specs">${specs.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+          </div>
+        </div>`;
+
+      if (book.has3D) {
+        const el = createBook3D(book, window.innerWidth < 500 ? 190 : 240);
+        $("#stage").appendChild(el);
+        const rot = makeRotatable(el, { x: -10, y: -32 });
+        $(".views").addEventListener("click", (e) => {
+          const v = e.target.dataset.v;
+          if (v === "on") rot.set(-6, -18);
+          if (v === "sirt") rot.set(-6, 90);
+          if (v === "arka") rot.set(-6, 180);
+        });
+      }
+
+      if (book.stock > 0) {
+        const qtyEl = $("#qty");
+        const clamp = (n) => Math.max(1, Math.min(book.stock, Number(n) || 1));
+        $("#minus").onclick = () => (qtyEl.value = clamp(qtyEl.value - 1));
+        $("#plus").onclick = () => (qtyEl.value = clamp(Number(qtyEl.value) + 1));
+        qtyEl.onchange = () => (qtyEl.value = clamp(qtyEl.value));
+        $("#add").onclick = () => addToCart(book, clamp(qtyEl.value));
+      }
+
+      if (book.categoryId) {
+        const similar = (await api("/books?category=" + book.categoryId)).filter((b) => b.id !== book.id).slice(0, 6);
+        if (similar.length) {
+          $("#similar").innerHTML = similar.map(bookCardHTML).join("");
+          $("#similar-sec").classList.remove("hidden");
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giriş – BookHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .login { display: grid; place-items: center; padding: 56px 0; }
+    .login .panel { width: min(420px, 100%); padding: 32px 28px; }
+    .login form { display: grid; gap: 16px; margin-top: 18px; }
+    .login .err { color: var(--danger); font-size: .88rem; min-height: 1.2em; margin: 0; }
+    .demo { margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--line); font-size: .85rem; color: var(--muted); }
+    .demo-btns { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <main class="wrap login">
+    <div class="panel">
+      <div class="eyebrow">Hoş geldiniz</div>
+      <h2>BookHub'a giriş yapın</h2>
+      <form id="form">
+        <div class="field"><label for="u">Kullanıcı adı</label><input class="input" id="u" autocomplete="username" required></div>
+        <div class="field"><label for="p">Şifre</label><input class="input" id="p" type="password" autocomplete="current-password" required></div>
+        <p class="err" id="err"></p>
+        <button class="btn btn-accent btn-block" type="submit">Giriş Yap</button>
+      </form>
+      <div class="demo">
+        Deneme hesapları (yerel geliştirme):
+        <div class="demo-btns">
+          <button class="btn btn-ghost btn-sm" data-u="admin">Yönetici olarak doldur</button>
+          <button class="btn btn-ghost btn-sm" data-u="misafir">Misafir olarak doldur</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (async function () {
+      const { api, $, qs } = BH;
+      const back = qs("r");
+      const target = back && back.startsWith("/") && !back.startsWith("//") ? back : "/";
+      if (await BH.ready) location.href = target;
+
+      $(".demo-btns").addEventListener("click", (e) => {
+        const u = e.target.dataset.u; if (!u) return;
+        $("#u").value = u; $("#p").value = "123456"; $("#p").focus();
+      });
+
+      $("#form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        $("#err").textContent = "";
+        try {
+          const user = await api("/auth/login", { method: "POST", body: { username: $("#u").value, password: $("#p").value } });
+          location.href = user.role === "admin" && target === "/" ? "/admin.html" : target;
+        } catch (err) { $("#err").textContent = err.message; }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sepet – BookHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .cart { display: grid; grid-template-columns: 1fr 340px; gap: 28px; align-items: start; padding: 8px 0 40px; }
+    @media (max-width: 860px) { .cart { grid-template-columns: 1fr; } }
+    .line { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 16px; border-bottom: 1px solid var(--line); }
+    .line:last-child { border-bottom: 0; }
+    .line .mini-cover { width: 64px; }
+    .line h3 { margin: 0 0 2px; font-size: 1rem; }
+    .line .meta { font-size: .85rem; color: var(--muted); }
+    .line .right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .qty { display: inline-flex; align-items: center; border: 1.5px solid var(--line); border-radius: 999px; }
+    .qty button { width: 30px; height: 32px; border: 0; background: none; cursor: pointer; font-size: 1rem; }
+    .qty span { min-width: 24px; text-align: center; font-weight: 600; }
+    .remove { border: 0; background: none; color: var(--muted); font-size: .8rem; cursor: pointer; }
+    .remove:hover { color: var(--danger); }
+    .summary { padding: 22px; display: grid; gap: 14px; position: sticky; top: 86px; }
+    .summary .row { display: flex; justify-content: space-between; }
+    .summary .total { font: 700 1.4rem var(--serif); border-top: 1px solid var(--line); padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div style="padding:40px 0 18px"><div class="eyebrow">Alışveriş</div><h1>Sepetim</h1></div>
+    <div id="root"><div class="empty">Yükleniyor…</div></div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (async function () {
+      const { api, $, esc, formatPrice, conditionLabel, coverHTML, getCart, saveCart, toast } = BH;
+      const user = await BH.ready;
+      const all = await api("/books");
+      const byId = new Map(all.map((b) => [b.id, b]));
+
+      function render() {
+        // silinmiş kitapları sepetten ayıkla
+        const cart = getCart().filter((i) => byId.has(i.bookId));
+        saveCart(cart);
+        if (!cart.length) {
+          $("#root").innerHTML = `<div class="panel empty"><h3>Sepetiniz boş</h3><p>Raflarda göz gezdirmeye ne dersiniz?</p><a class="btn btn-accent" href="/kitaplar.html">Kitaplara göz at</a></div>`;
+          return;
+        }
+        const total = cart.reduce((s, i) => s + byId.get(i.bookId).price * i.quantity, 0);
+        $("#root").innerHTML = `
+          <div class="cart">
+            <div class="panel">${cart.map((i) => {
+              const b = byId.get(i.bookId);
+              return `<div class="line" data-id="${b.id}">
+                <a class="mini-cover" href="/kitap.html?id=${b.id}">${coverHTML(b)}</a>
+                <div><h3><a href="/kitap.html?id=${b.id}">${esc(b.title)}</a></h3>
+                  <div class="meta">${esc(b.author)} · ${conditionLabel(b.condition)} · ${formatPrice(b.price)}</div>
+                  ${i.quantity > b.stock ? `<div class="meta" style="color:var(--danger)">Stokta yalnızca ${b.stock} adet var</div>` : ""}</div>
+                <div class="right">
+                  <strong>${formatPrice(b.price * i.quantity)}</strong>
+                  <div class="qty"><button data-a="-">−</button><span>${i.quantity}</span><button data-a="+">+</button></div>
+                  <button class="remove" data-a="x">Kaldır</button>
+                </div>
+              </div>`;
+            }).join("")}</div>
+            <aside class="panel summary">
+              <h3 style="margin:0">Sipariş Özeti</h3>
+              <div class="row"><span class="muted">Ürünler (${cart.reduce((n, i) => n + i.quantity, 0)})</span><span>${formatPrice(total)}</span></div>
+              <div class="row"><span class="muted">Kargo</span><span>Ücretsiz</span></div>
+              <div class="row total"><span>Toplam</span><span>${formatPrice(total)}</span></div>
+              ${user ? `
+                <div class="field"><label for="addr">Teslimat adresi</label><textarea class="input" id="addr" placeholder="Mahalle, sokak, no, ilçe / il" style="min-height:80px"></textarea></div>
+                <button class="btn btn-accent btn-block" id="checkout">Satın Al</button>`
+              : `<a class="btn btn-accent btn-block" href="/giris.html?r=/sepet.html">Satın almak için giriş yapın</a>`}
+            </aside>
+          </div>`;
+      }
+
+      $("#root").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button"); if (!btn) return;
+        if (btn.id === "checkout") return checkout(btn);
+        const line = btn.closest(".line"); if (!line) return;
+        const id = Number(line.dataset.id), b = byId.get(id);
+        let cart = getCart();
+        const item = cart.find((i) => i.bookId === id);
+        if (btn.dataset.a === "+") { if (item.quantity >= b.stock) return toast(`Stokta yalnızca ${b.stock} adet var.`, "error"); item.quantity++; }
+        if (btn.dataset.a === "-") item.quantity = Math.max(1, item.quantity - 1);
+        if (btn.dataset.a === "x") cart = cart.filter((i) => i.bookId !== id);
+        saveCart(cart);
+        render();
+      });
+
+      async function checkout(btn) {
+        const address = $("#addr").value.trim();
+        if (!address) { toast("Lütfen teslimat adresini yazın.", "error"); $("#addr").focus(); return; }
+        btn.disabled = true;
+        try {
+          const order = await api("/orders", { method: "POST", body: { items: getCart(), address } });
+          saveCart([]);
+          location.href = "/siparislerim.html?yeni=" + order.id;
+        } catch (err) { toast(err.message, "error"); btn.disabled = false; }
+      }
+
+      render();
+    })();
+  </script>
+</body>
+</html>

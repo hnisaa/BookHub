@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Siparişlerim – BookHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/orders.css">
+</head>
+<body>
+  <main class="wrap">
+    <div style="padding:40px 0 18px"><div class="eyebrow">Hesabım</div><h1>Siparişlerim</h1></div>
+    <div id="success" class="success hidden"></div>
+    <div id="list"><div class="empty">Yükleniyor…</div></div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (async function () {
+      const { api, $, esc, qs, formatPrice, formatDate } = BH;
+      if (!(await BH.requireUser())) return;
+      const STATUS = { hazirlaniyor: "Hazırlanıyor", kargoda: "Kargoda", teslim_edildi: "Teslim edildi", iptal: "İptal" };
+      const fresh = qs("yeni");
+      if (fresh) { $("#success").textContent = `Teşekkürler! #${fresh} numaralı siparişiniz alındı.`; $("#success").classList.remove("hidden"); }
+
+      const orders = await api("/orders");
+      $("#list").innerHTML = orders.length ? orders.map((o) => `
+        <div class="panel order">
+          <div class="order-head">
+            <div><strong>Sipariş #${o.id}</strong><div class="muted">${formatDate(o.createdAt)}</div></div>
+            <span class="status s-${o.status}">${STATUS[o.status] || o.status}</span>
+          </div>
+          <ul>${o.items.map((i) => `<li><span>${i.bookId ? `<a href="/kitap.html?id=${i.bookId}">${esc(i.title)}</a>` : esc(i.title)} × ${i.quantity}</span><span>${formatPrice(i.unitPrice * i.quantity)}</span></li>`).join("")}</ul>
+          <div class="order-foot"><span class="muted">${esc(o.address || "")}</span><strong>${formatPrice(o.total)}</strong></div>
+        </div>`).join("")
+        : `<div class="panel empty"><h3>Henüz siparişiniz yok</h3><a class="btn btn-accent" href="/kitaplar.html">Alışverişe başla</a></div>`;
+    })();
+  </script>
+</body>
+</html>
