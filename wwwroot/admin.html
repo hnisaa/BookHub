@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/orders.css">
   <style>
@@ -35,7 +36,11 @@
     .table .low { color: var(--danger); font-weight: 700; }
     .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
     .upload-row { display: flex; gap: 8px; }
-    .cat-form { display: flex; gap: 8px; max-width: 420px; margin-bottom: 18px; }
+    .cat-form { display: flex; gap: 8px; max-width: 640px; margin-bottom: 22px; flex-wrap: wrap; }
+    .cat-form .input { flex: 1 1 200px; }
+    .cat-admin-group { margin-bottom: 18px; }
+    .cat-admin-group h4 { margin: 0 0 8px; font: 700 1rem var(--serif); }
+    .cat-admin-group h4 span { font: 600 .78rem var(--sans); color: var(--muted); margin-left: 6px; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; }
     .chip { padding: 8px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: .9rem; }
     .chip span { color: var(--muted); margin-left: 6px; font-size: .8rem; }
@@ -113,8 +118,13 @@
 
     <!-- Kategoriler -->
     <section data-pane="kategoriler" class="hidden">
-      <form class="cat-form" id="cat-form"><input class="input" id="cat-name" placeholder="Yeni kategori adı" required><button class="btn btn-accent">Ekle</button></form>
-      <div class="chips" id="cats"></div>
+      <form class="cat-form" id="cat-form">
+        <input class="input" id="cat-name" placeholder="Yeni kategori adı" required aria-label="Kategori adı">
+        <input class="input" id="cat-group" placeholder="Ana grup (ör. Edebiyat)" list="group-list" aria-label="Ana grup">
+        <datalist id="group-list"></datalist>
+        <button class="btn btn-accent">Ekle</button>
+      </form>
+      <div id="cats"></div>
     </section>
   </main>
 

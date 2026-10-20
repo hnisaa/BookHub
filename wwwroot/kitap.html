@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; padding: 40px 0; align-items: start; }
@@ -51,7 +52,8 @@
   <script src="/js/app.js"></script>
   <script>
     (async function () {
-      const { api, $, esc, qs, formatPrice, conditionLabel, coverHTML, createBook3D, makeRotatable, addToCart, bookCardHTML, toast } = BH;
+      const { api, $, esc, qs, formatPrice, conditionLabel, coverHTML, createBook3D, makeRotatable, addToCart, bookCardHTML, favButtonHTML } = BH;
+      await BH.ready; // favori durumunu doğru göstermek için oturumu bekle
       let book;
       try { book = await api("/books/" + Number(qs("id"))); }
       catch (e) { $("#root").innerHTML = `<div class="empty"><h3>Kitap bulunamadı</h3><p><a class="btn" href="/kitaplar.html">Kataloğa dön</a></p></div>`; return; }
@@ -88,6 +90,7 @@
                 <button class="btn btn-accent" id="add">Sepete Ekle</button>
                 <span class="stock ${book.stock <= 2 ? "low" : "muted"}">${book.stock <= 2 ? "Son " + book.stock + " adet!" : "Stokta " + book.stock + " adet"}</span>`
               : `<span class="stock low">Bu kitap şu an stokta yok.</span>`}
+              ${favButtonHTML(book.id, "inline")}
             </div>
             <dl class="specs">${specs.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
           </div>

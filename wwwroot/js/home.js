@@ -1,9 +1,9 @@
 /* Anasayfa: 3B kitap halkası + vitrinler */
 (async function () {
   "use strict";
-  const { api, $, esc, createBook3D, bookCardHTML } = window.BH;
+  const { api, $, esc, createBook3D, bookCardHTML, loadCategories, categoryMenuHTML } = window.BH;
 
-  const [books, categories] = await Promise.all([api("/books"), api("/categories")]);
+  const [books, categories] = await Promise.all([api("/books"), loadCategories()]);
 
   // ---------------------------------------------------------- istatistikler
   $("#s-new").textContent = books.filter((b) => b.condition === "sifir").length;
@@ -15,14 +15,13 @@
   const fill = (el, list) => {
     el.innerHTML = list.length ? list.map(bookCardHTML).join("") : '<div class="empty">Henüz kitap yok.</div>';
   };
-  fill($("#new-books"), books.filter((b) => b.condition === "sifir").slice(0, 6));
-  fill($("#used-books"), books.filter((b) => b.condition === "ikinci_el").slice(0, 6));
-  $("#cat-list").innerHTML = categories
-    .map((c) => `<a class="cat-card" href="/kitaplar.html?kategori=${c.id}">${esc(c.name)}<span>${c.count} kitap</span></a>`)
-    .join("");
+  fill($("#new-books"), books.filter((b) => b.condition === "sifir").slice(0, 8));
+  fill($("#used-books"), books.filter((b) => b.condition === "ikinci_el").slice(0, 8));
+  $("#all-count").textContent = books.length;
+  $("#cat-list").innerHTML = categoryMenuHTML(categories, { openAll: true });
 
   // ---------------------------------------------------------- 3B halka
-  let featured = books.filter((b) => b.featured);
+  let featured = books.filter((b) => b.featured).slice(0, 10);
   if (featured.length < 5) featured = featured.concat(books.filter((b) => !b.featured)).slice(0, 8);
   if (!featured.length) return;
 

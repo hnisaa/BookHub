@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Favorilerim – BookHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <div style="padding:40px 0 18px"><div class="eyebrow">Hesabım</div><h1>Favorilerim</h1></div>
+    <div class="result-info muted" id="info" style="margin-bottom:14px;font-size:.88rem"></div>
+    <div class="grid-books" id="list"><div class="empty" style="grid-column:1/-1">Yükleniyor…</div></div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (async function () {
+      const { api, $, bookCardHTML } = BH;
+      if (!(await BH.requireUser())) return;
+
+      async function load() {
+        const books = await api("/favorites");
+        $("#info").textContent = books.length ? books.length + " favori kitap" : "";
+        $("#list").innerHTML = books.length
+          ? books.map(bookCardHTML).join("")
+          : `<div class="panel empty" style="grid-column:1/-1">
+               <h3>Henüz favori kitabın yok</h3>
+               <p>Beğendiğin kitapların kapağındaki kalbe dokun, burada biriksinler.</p>
+               <a class="btn btn-accent" href="/kitaplar.html">Kitaplara göz at</a>
+             </div>`;
+      }
+
+      // Bu sayfada kalpten çıkarılan kitap listeden de kalksın
+      document.addEventListener("bh:favorites", (e) => { if (!e.detail.add) load(); });
+      load();
+    })();
+  </script>
+</body>
+</html>

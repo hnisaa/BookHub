@@ -80,18 +80,19 @@ app.MapGet("/api/auth/me", (HttpContext ctx) => Results.Json(CurrentUser(ctx)));
 // ---------------------------------------------------------------------- kategoriler
 
 app.MapGet("/api/categories", () => db.Query("""
-    SELECT c.Id, c.Name, COUNT(b.Id) AS Cnt FROM Categories c
-    LEFT JOIN Books b ON b.CategoryId = c.Id GROUP BY c.Id ORDER BY c.Name
-    """, r => new { id = (long)r["Id"], name = (string)r["Name"], count = (long)r["Cnt"] }));
+    SELECT c.Id, c.Name, c.GroupName, COUNT(b.Id) AS Cnt FROM Categories c
+    LEFT JOIN Books b ON b.CategoryId = c.Id GROUP BY c.Id ORDER BY c.GroupName, c.Name
+    """, r => new { id = (long)r["Id"], name = (string)r["Name"], group = (string)r["GroupName"], count = (long)r["Cnt"] }));
 
 app.MapPost("/api/categories", (HttpContext ctx, CategoryInput input) =>
 {
     if (CurrentUser(ctx) is not { IsAdmin: true }) return NeedAdmin();
     var name = input.Name?.Trim();
+    var group = string.IsNullOrWhiteSpace(input.Group) ? "Diğer" : input.Group.Trim();
     if (string.IsNullOrEmpty(name)) return Error("Kategori adı boş olamaz.");
     if (db.Scalar("SELECT 1 FROM Categories WHERE Name = $n", ("$n", name)) is not null) return Error("Bu kategori zaten var.");
-    var id = db.Insert("INSERT INTO Categories (Name) VALUES ($n)", ("$n", name));
-    return Results.Ok(new { id, name, count = 0 });
+    var id = db.Insert("INSERT INTO Categories (Name, GroupName) VALUES ($n, $g)", ("$n", name), ("$g", group));
+    return Results.Ok(new { id, name, group, count = 0 });
 });
 
 // ---------------------------------------------------------------------- kitaplar
@@ -195,6 +196,32 @@ app.MapPost("/api/upload", async (HttpContext ctx) =>
         await file.CopyToAsync(fs);
     return Results.Ok(new { url = $"/uploads/{name}" });
 }).DisableAntiforgery();
+
+// ---------------------------------------------------------------------- favoriler
+
+app.MapGet("/api/favorites", (HttpContext ctx) =>
+{
+    if (CurrentUser(ctx) is not { } user) return NeedLogin();
+    return Results.Ok(db.Query(Database.BookSelect + """
+         JOIN Favorites f ON f.BookId = b.Id WHERE f.UserId = $u ORDER BY f.CreatedAt DESC
+        """, Database.MapBook, ("$u", user.Id)));
+});
+
+app.MapPost("/api/favorites/{bookId:long}", (long bookId, HttpContext ctx) =>
+{
+    if (CurrentUser(ctx) is not { } user) return NeedLogin();
+    if (db.Scalar("SELECT 1 FROM Books WHERE Id = $b", ("$b", bookId)) is null) return Error("Kitap bulunamadı.", 404);
+    db.Execute("INSERT OR IGNORE INTO Favorites (UserId, BookId, CreatedAt) VALUES ($u,$b,$c)",
+        ("$u", user.Id), ("$b", bookId), ("$c", Database.Now()));
+    return Results.Ok();
+});
+
+app.MapDelete("/api/favorites/{bookId:long}", (long bookId, HttpContext ctx) =>
+{
+    if (CurrentUser(ctx) is not { } user) return NeedLogin();
+    db.Execute("DELETE FROM Favorites WHERE UserId = $u AND BookId = $b", ("$u", user.Id), ("$b", bookId));
+    return Results.Ok();
+});
 
 // ---------------------------------------------------------------------- siparişler
 
@@ -314,4 +341,4 @@ static string FindRoot()
     throw new DirectoryNotFoundException("wwwroot klasörü bulunamadı. BookHub.bat dosyasını proje klasöründen çalıştırın.");
 }
 
-public record CategoryInput(string? Name);
+public record CategoryInput(string? Name, string? Group);

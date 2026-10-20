@@ -24,8 +24,15 @@ CREATE TABLE IF NOT EXISTS Sessions (
 );
 
 CREATE TABLE IF NOT EXISTS Categories (
-    Id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    Name TEXT    NOT NULL UNIQUE
+    Id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name      TEXT    NOT NULL UNIQUE,
+    GroupName TEXT    NOT NULL DEFAULT 'Diğer'  -- soldaki menüde kategorinin altında durduğu ana grup
+);
+
+-- Küçük ayar tablosu (ör. hangi örnek veri sürümünün yüklendiği)
+CREATE TABLE IF NOT EXISTS Meta (
+    Key   TEXT PRIMARY KEY,
+    Value TEXT
 );
 
 CREATE TABLE IF NOT EXISTS Books (
@@ -52,6 +59,13 @@ CREATE TABLE IF NOT EXISTS Books (
 
 CREATE INDEX IF NOT EXISTS IX_Books_Condition ON Books(Condition);
 CREATE INDEX IF NOT EXISTS IX_Books_Category  ON Books(CategoryId);
+
+CREATE TABLE IF NOT EXISTS Favorites (
+    UserId    INTEGER NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+    BookId    INTEGER NOT NULL REFERENCES Books(Id) ON DELETE CASCADE,
+    CreatedAt TEXT    NOT NULL,
+    PRIMARY KEY (UserId, BookId)              -- bir kitap aynı kullanıcıda bir kez favori olur
+);
 
 CREATE TABLE IF NOT EXISTS Orders (
     Id        INTEGER PRIMARY KEY AUTOINCREMENT,

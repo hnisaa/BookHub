@@ -20,9 +20,26 @@ Gereksinim: .NET 10 SDK (bu bilgisayarda kurulu).
 | Kullanıcı | Şifre  | Rol      | Yetkiler                                        |
 |-----------|--------|----------|-------------------------------------------------|
 | admin     | 123456 | Yönetici | Kitap ekle/düzenle/sil, kapak yükle, siparişleri yönet, kategori ekle |
-| misafir   | 123456 | Müşteri  | Kitapları gez, 3B incele, sepete ekle, satın al |
+| misafir   | 123456 | Müşteri  | Kitapları gez, 3B incele, sepete ekle, satın al, favorilere ekle |
 
-Giriş yapmadan da kitaplar gezilebilir; satın almak için giriş gerekir.
+Giriş yapmadan da kitaplar gezilebilir; satın almak ve favorilere eklemek için giriş gerekir.
+
+## Kategoriler
+
+Kategoriler ana gruplar altında toplanır (Edebiyat, Düşünce & Bilim, Çocuk & Gençlik, Yaşam & Sanat).
+Her sayfada üst menüdeki **Kategoriler** butonu soldan açılan bir çekmece açar; katalog sayfasında aynı menü
+solda sabit durur. Gruplar tıklanınca açılıp kapanır. Yönetici yeni kategori eklerken ana grubunu da seçer.
+
+Örnek veriler sürüm numarasıyla (`Meta` tablosu, `seed_version`) eklenir: her sürüm bir kez çalışır,
+yöneticinin sildiği örnek kitaplar yeniden açılışta geri gelmez.
+
+## Favoriler ve tema
+
+- **Favoriler:** Kitap kapaklarındaki ve kitap sayfasındaki kalp butonuyla eklenir/çıkarılır.
+  Her kullanıcının favorileri veritabanında (`Favorites` tablosu) tutulur, **Favorilerim** sayfasında listelenir.
+- **Tema:** Üst menüdeki ay / güneş düğmesi açık ve koyu tema arasında geçiş yapar. Seçim tarayıcıda hatırlanır;
+  hiç seçim yapılmadıysa bilgisayarın açık/koyu ayarı kullanılır (`js/theme.js`). Renkler `css/style.css`
+  başındaki değişkenlerde tanımlıdır.
 
 ## Klasör yapısı
 
@@ -42,6 +59,7 @@ BookHub/
    ├─ kitap.html          Kitap detayı – 3B görüntüleyici
    ├─ sepet.html          Sepet ve satın alma
    ├─ siparislerim.html   Kullanıcının siparişleri
+   ├─ favoriler.html      Kullanıcının favori kitapları
    ├─ giris.html          Giriş
    ├─ admin.html          Yönetim paneli (yalnızca admin)
    ├─ css/  js/           Stiller ve scriptler
@@ -70,6 +88,8 @@ Kapak görseli yüklenmezse kitap, seçilen renklerle otomatik bir kapak olarak 
 | POST / PUT / DELETE | /api/books[/{id}] | admin |
 | POST  | /api/upload                | admin     |
 | GET / POST | /api/categories       | herkes / admin |
+| GET   | /api/favorites             | giriş yapmış |
+| POST / DELETE | /api/favorites/{bookId} | giriş yapmış |
 | POST  | /api/orders                | giriş yapmış |
 | GET   | /api/orders                | kendi siparişleri (admin: hepsi) |
 | PUT   | /api/orders/{id}/status    | admin     |

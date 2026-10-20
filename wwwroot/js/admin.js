@@ -34,13 +34,21 @@
   // ---------------------------------------------------------- kategoriler
   async function loadCategories() {
     categories = await api("/categories");
-    $("#f-category").innerHTML = '<option value="">— Seçiniz —</option>' + categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
-    $("#cats").innerHTML = categories.map((c) => `<span class="chip">${esc(c.name)}<span>${c.count}</span></span>`).join("");
+    const groups = BH.groupCategories(categories);
+    const selected = $("#f-category").value;
+    $("#f-category").innerHTML = '<option value="">— Seçiniz —</option>' + groups.map((g) =>
+      `<optgroup label="${esc(g.name)}">${g.items.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</optgroup>`).join("");
+    $("#f-category").value = selected;
+    $("#group-list").innerHTML = groups.map((g) => `<option value="${esc(g.name)}">`).join("");
+    $("#cats").innerHTML = groups.map((g) => `
+      <div class="cat-admin-group"><h4>${esc(g.name)} <span>${g.count} kitap</span></h4>
+        <div class="chips">${g.items.map((c) => `<span class="chip">${esc(c.name)}<span>${c.count}</span></span>`).join("")}</div>
+      </div>`).join("");
   }
   $("#cat-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
-      await api("/categories", { method: "POST", body: { name: $("#cat-name").value } });
+      await api("/categories", { method: "POST", body: { name: $("#cat-name").value, group: $("#cat-group").value } });
       $("#cat-name").value = "";
       toast("Kategori eklendi.");
       loadCategories();
